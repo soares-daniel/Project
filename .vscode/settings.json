@@ -1,0 +1,10 @@
+{
+  // on save format the code
+  "editor.formatOnSave": true,
+  // on save remove trailing spaces
+  "files.trimTrailingWhitespace": true,
+  // settings above for max line length is unknown to vscode
+  "cSpell.enabled": false,
+  // change line is too long to 150
+  "python.linting.pylintArgs": ["--disable=C0114,C0103", "--max-line-length=180"],
+}

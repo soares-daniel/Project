@@ -1,0 +1,118 @@
+"""
+To implement the server for this project, you will need to define the following functions in the Server class:
+
+__init__: This function is the constructor for the Server class and is responsible for initializing the attributes of the object. It should take the following arguments:
+
+    self: The instance of the object being constructed.
+    probability: The probability of packet loss.
+    filename: The name of the file to be transmitted.
+    protocol: The name of the protocol to be used (either "Go-back-N" or "selective repeat").
+    window_size: The size of the window for the Go-back-N protocol.
+
+run: This function runs the main loop of the server, which listens for incoming connections from clients and handles them as they arrive. It should take the following argument:
+    self: The instance of the Server object.
+
+handle_client: This function handles a single client connection and sends the file to the client using the specified protocol. It should take the following arguments:
+    self: The instance of the Server object.
+    client_addr: The address of the client.
+
+send_packet: This function sends a single packet to a client using the specified protocol. It should take the following arguments:
+    self: The instance of the Server object.
+            data: The data to be sent.
+addr: The address of the client.
+
+send_packet_with_probability: This function sends a single packet to a client with a probability of failure. It should take the following arguments:
+    self: The instance of the Server object.
+    data: The data to be sent.
+    addr: The address of the client.
+    packet_id: The ID of the packet being sent.
+
+send_file: This function sends the file to the client, one packet at a time. It should take the following arguments:
+    self: The instance of the Server object.
+    client_addr: The address of the client.
+measure_performance: This function tracks the number of packets sent and the number of bytes received
+"""
+
+
+"""
+SEND_PACKET FUNCTION
+
+The two implementations of the send_packet function are slightly different.
+The first implementation uses a sliding window to send and retransmit packets,
+while the second implementation uses a dictionary to store unacknowledged packets and retransmits them based
+on the acknowledgement received from the client.
+"""
+
+def send_packet_window(self, data, addr):
+    """The Go-back-N protocol using a sliding window"""
+
+    # Initialize the sliding window
+    send_window_start = 0
+    send_window_end = self.window_size - 1
+
+    while send_window_start <= send_window_end:
+        # Send the packet and increment the sequence number
+        success = self.send_packet_with_probability(data, addr, self.seq_num)
+        self.seq_num += 1
+
+        # If the packet was not acknowledged, retransmit it
+        if not success:
+            self.send_packet_with_probability(data, addr, self.seq_num - 1)
+        else:
+            # Move the window forward
+            send_window_start += 1
+
+        # Wait for an acknowledgement from the client
+        data, addr = self.sock.recvfrom(1024)
+        ack_num = int(data.decode())
+
+        # If the acknowledgement is not within the window,
+        # retransmit all the unacknowledged packets
+        if ack_num < send_window_start:
+            send_window_start = ack_num
+            send_window_end = ack_num + self.window_size - 1
+
+"""
+In the first implementation, the sliding window is advanced when a packet is acknowledged by the client.
+If a packet is not acknowledged, it is retransmitted until it is acknowledged. This allows the sender to send
+multiple packets without waiting for an acknowledgement for each one, which can improve the efficiency of the protocol.
+"""
+
+def send_packet(self, data, addr):
+    """The Go-back-N protocol"""
+
+    # Send the packet and increment the sequence number
+    success = self.send_packet_with_probability(data, addr)
+    if success:
+        self.seq_num += 1
+        self.unacknowledged_packets[self.seq_num] = data
+    else:
+        # Handle retransmission
+        pass
+
+    # Wait for an acknowledgement from the client
+    data, addr = self.sock.recvfrom(1024)
+    ack_num = int(data.decode())
+
+    # If the acknowledgement is not the expected one,
+    # retransmit all the unacknowledged packets
+    if ack_num < self.seq_num:
+        for i in range(ack_num, self.seq_num):
+            self.send_packet_with_probability(self.unacknowledged_packets[i], addr)
+    else:
+        self.unacknowledged_packets = {}
+
+def send_packet_with_probability(self, data, addr):
+    """A wrapper function to the UDP send function
+    that ensures that the success of really sending data is (1-probability) """
+    if random.uniform(0, 1) > self.probability:
+        self.sock.sendto(data, addr)
+        return True
+    else:
+        return False
+
+"""
+In the second implementation, the sender waits for an acknowledgement for each packet before sending the next one.
+If the acknowledgement is not the expected one, the sender retransmits all the unacknowledged packets.
+This can be less efficient than using a sliding window, but it can be simpler to implement.
+"""
