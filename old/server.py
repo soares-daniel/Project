@@ -11,9 +11,11 @@ class Server:
         self.window_size = window_size
         self.probability = probability
         self.filename = filename
+        self.base_num = 0
         self.ack_num = 0
         self.seq_num = 0
         self.unacknowledged_packets = {}
+        self.received_packets = {}
         self.next_packet_to_send = b"Hello, Client!"
         self.packets_sent = {}
         self.total_packets_sent = 0
@@ -53,23 +55,39 @@ class Server:
         # Measure the performance metrics
         self.measure_performance()
 
-    def send_packet(self, data, addr) -> None:
-        """The sliding window protocol"""
+    def send_packet(self, data, addr):
+        """The Go-back-N protocol"""
 
-        # Check if the window is full
-        if self.seq_num - self.ack_num >= self.window_size:
-            # Wait for an acknowledgement from the client
-            data, addr = self.sock.recvfrom(1024)
-            self.ack_num = int(data.decode())
+        # Check if the number of unacknowledged packets is less than the window size
+        if len(self.unacknowledged_packets) < self.window_size:
+            # Send the packet and increment the sequence number
+            success = self.send_packet_with_probability(data, addr)
+            if success:
+                self.seq_num += 1
+                self.unacknowledged_packets[self.seq_num] = data
+            else:
+                # Handle retransmission
+                pass
 
-        # Send the packet and increment the sequence number
-        success = self.send_packet_with_probability(data, addr)
-        if success:
-            self.seq_num += 1
-            self.unacknowledged_packets[self.seq_num] = data
+        # Wait for an acknowledgement from the client
+        data, addr = self.sock.recvfrom(1024)
+        ack_num = int(data.decode())
+
+        # If the acknowledgement is not the expected one,
+        # retransmit all the unacknowledged packets
+        if ack_num < self.seq_num:
+            for i in range(ack_num, self.seq_num):
+                self.send_packet_with_probability(self.unacknowledged_packets[i], addr)
         else:
-            # Handle retransmission
-            pass
+            self.unacknowledged_packets = {}
+
+            # Check if all clients have received the current packet
+            if self.received_packets[addr] < self.seq_num:
+                self.received_packets[addr] = self.seq_num
+            if all(packet_num == self.seq_num for packet_num in self.received_packets.values()):
+                # All clients have received the current packet,
+                # so advance the sliding window
+                self.base_num = self.seq_num + 1
 
     def send_packet_with_probability(self, data, addr) -> bool:
         """Send a packet with a probability of failure"""
@@ -85,32 +103,17 @@ class Server:
         else:
             return False
 
-    def send_file(self, filename, addr) -> None:
-        """Send a file to the client using the Go-back-N protocol"""
+    def send_file(self, filename, addr):
+        """Send a file to a client using the Go-back-N protocol"""
 
-        # Open the file in binary mode
-        with open(filename, "rb") as f:
-            # Read the file in chunks of 1024 bytes
+        # Open the file and read it in chunks
+        with open(filename, 'rb') as f:
             chunk = f.read(1024)
-
-            # Keep sending the file until all the data has been sent
             while chunk:
-                # Send the chunk of data to the client
+                # Send the chunk to the client
                 self.send_packet(chunk, addr)
 
-                # Wait for an acknowledgement from the client
-                data, _ = self.sock.recvfrom(1024)
-                self.ack_num = int(data.decode())
-
-                # If the acknowledgement is not the expected one,
-                # retransmit all the unacknowledged packets
-                if self.ack_num < self.seq_num:
-                    for i in range(self.ack_num, self.seq_num):
-                        self.send_packet(self.unacknowledged_packets[i], addr)
-                else:
-                    self.unacknowledged_packets = {}
-
-                # Read the next chunk of data from the file
+                # Read the next chunk from the file
                 chunk = f.read(1024)
 
     def measure_performance(self) -> None:

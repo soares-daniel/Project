@@ -1,5 +1,5 @@
 import sys
-from server import Server
+from old.server import Server
 
 def main() -> None:
     """Main function"""
