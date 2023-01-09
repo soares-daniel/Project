@@ -1,0 +1,11 @@
+{
+    "configurations": [
+        {
+            "name": "Python: tool.py",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/main.py",
+            "args": ["2", "1", "example.txt", "0.001", "Go-Back-N", "5"]
+        }
+    ]
+}
