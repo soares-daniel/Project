@@ -1,6 +1,5 @@
 import random
 import socket
-from struct import pack
 import time
 
 def server (process_id: int, num_processes: int, filename: str, probability: float, window_size: int, chunk_size: int):
