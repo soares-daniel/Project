@@ -1,7 +1,8 @@
 import socket
 
-def client(server_process_id: int, client_process_id: int, filename: str, probability: float, protocol: str, window_size: int):
-
+def client(server_process_id: int, client_process_id: int, filename: str, protocol: str, window_size: int):
+    """Client function to send a file to the server using the Go-Back-N Protocol"""
+    # Create and start the client
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     client_addr: tuple = ("127.0.0.1", 9000 + int(client_process_id))
     client_socket.bind(client_addr)

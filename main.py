@@ -1,9 +1,10 @@
 import sys
 import threading
-from server import server
-from client import client
+from server_go_back_n import server
+from client_go_back_n import client
 
 def main():
+    """Main function to start server and clients"""
     #Parse the args
     process_id: int = int(sys.argv[1])
     num_processes: int = int(sys.argv[2])
@@ -19,7 +20,7 @@ def main():
     # Create and start the clients
     client_threads = []
     for i in range(num_processes):
-        client_thread = threading.Thread(target=client, args=(process_id, i, filename, probability, protocol, window_size))
+        client_thread = threading.Thread(target=client, args=(process_id, i, filename, protocol, window_size))
         client_thread.start()
         client_threads.append(client_thread)
 
