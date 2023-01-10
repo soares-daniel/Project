@@ -21,24 +21,26 @@ def client(server_process_id: int, client_process_id: int, filename: str, probab
     received_packets: dict[int,bytes] = {}
     packets_received: int = 0
     ack_num = 0
+    client_socket.settimeout(0.1)
     # while slient is connected to server
-    while packets_received < num_packets:
-        while window_start <= window_end:
-            message, address = client_socket.recvfrom(1024)
-            if address == server_addr:
-                # End of file
+    while ack_num < num_packets -1:
+        for i in range(window_size):
+            try:
+                message, address = client_socket.recvfrom(1024)
                 if message == b"eof":
                     break
+            except socket.timeout:
+                # Send ack if no new message
+                continue
+            if address == server_addr:
                 # Packet received
-                else:
-                    seq_num, data = message.decode().split(" ", 1)
-                    seq_num = int(seq_num)
-                    data = bytes(data, "utf-8")
-                    received_packets[seq_num] = data
-                    print(f"Received packet {seq_num} from {address}")
-                    ack_num = seq_num
-                    packets_received += 1
-                    window_start += 1
+                seq_num, data = message.decode().split(" ", 1)
+                seq_num = int(seq_num)
+                data = bytes(data, "utf-8")
+                received_packets[seq_num] = data
+                print(f"Received packet {seq_num} from {address}")
+                ack_num = seq_num
+                window_start += 1
         # Send acks
         client_socket.sendto(bytes(str(ack_num), "utf-8"), server_addr)
         print(f"Sent ack {ack_num} to {server_addr}")
@@ -50,7 +52,7 @@ def client(server_process_id: int, client_process_id: int, filename: str, probab
 
     # Write the file
     with open(f"received_data/client_{client_process_id}_{filename}", "wb") as file:
-        for i in range(packets_received):
+        for i in range(packets_received - 1):
             file.write(received_packets[i])
 
     # Close the socket

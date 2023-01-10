@@ -31,6 +31,7 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
     # Send the amount of packets to the clients
     for client in ready_clients:
         server_socket.sendto(bytes(str(len(packets)), "utf-8"), client)
+        print(f"Sent amount of packets to {client}")
 
     # Send the file to all clients
     sent_packets = 0
@@ -40,26 +41,29 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
     seq_num: int = 0
     window_start: int = 0
     window_end = window_size - 1
+    datagram_seq_num = window_start
     while seq_num < len(packets):
         # Send the window
-        while window_start <= window_end:
-            # Take the packet but don't remove it from packets, as it can be, that it fails to be send, so you need to send it again.
-            if window_start >= len(packets):
-                break
-            packet = packets[window_start]
+        for client in ready_clients:
+            # Set first seq_num for this datagram
+            window_start = datagram_seq_num
+            seq_num = datagram_seq_num
             # Send the packet to all clients
-            for client in ready_clients:
+            for i in range(window_size):
+                if window_start > len(packets) - 1:
+                    continue
+                packet = packets[seq_num]
                 if probability < random.random():
                     # Pack the packet with the seq_num into a message
                     message = f"{seq_num} {packet}".encode("utf-8")
                     server_socket.sendto(message, client)
                     packets_sent[client].append(packet)
                     print(f"Sent packet {seq_num} to {client}")
-                    sent_packets += 1
-                    seq_num += 1
-                    window_start += 1
                 else:
-                    continue # Packet lost
+                    print(f"Packet {seq_num} lost")
+                sent_packets += 1
+                seq_num += 1
+                window_start += 1
         # Wait for acks and resend packets if necessary
         ready_clients = []
         while len(ready_clients) < int(num_processes):
@@ -69,19 +73,26 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
                 ready_clients.append(address)
             # If ack is not for the current packet, don't move the window and resend the packet
             elif int(data.decode()) <= seq_num - 1:
-                seq_num = window_start
-                while window_start <= window_end:
-                    packet = packets[window_start]
+                seq_num = datagram_seq_num
+                window_start = datagram_seq_num
+                for i in range(window_size):
+                    if window_start > len(packets) - 1:
+                        continue
+                    packet = packets[seq_num]
                     if probability < random.random():
                         # Pack the packet with the seq_num into a message
                         message = f"{seq_num} {packet}".encode("utf-8")
                         server_socket.sendto(message, address)
                         packets_sent[address].append(packet)
                         print(f"Sent packet {seq_num} to {address}")
-                        sent_packets += 1
-                        seq_num += 1
+                    else:
+                        print(f"Packet {seq_num} lost")
+                    sent_packets += 1
+                    seq_num += 1
+                    window_start += 1
         # Move the window
         window_start = window_end + 1
+        datagram_seq_num = window_start
         window_end += window_size
         if window_end >= len(packets):
             window_end = len(packets) - 1
