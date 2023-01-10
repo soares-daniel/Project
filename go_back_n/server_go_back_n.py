@@ -2,7 +2,7 @@ import random
 import socket
 import time
 
-def server (process_id: int, num_processes: int, filename: str, probability: float, protocol: str, window_size: int):
+def server (process_id: int, num_processes: int, filename: str, probability: float, window_size: int):
     """Server function to send the file to the clients using the Go-Back-N protocol"""
     # Create and start the server
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -75,7 +75,7 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
             elif int(data.decode()) <= seq_num - 1:
                 seq_num = datagram_seq_num
                 window_start = datagram_seq_num
-                for i in range(window_size):
+                for _ in range(window_size):
                     if window_start > len(packets) - 1:
                         continue
                     packet = packets[seq_num]

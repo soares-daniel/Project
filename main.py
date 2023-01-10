@@ -1,7 +1,6 @@
+# pylint: disable=C0415
 import sys
 import threading
-from server_go_back_n import server
-from client_go_back_n import client
 
 def main():
     """Main function to start server and clients"""
@@ -12,6 +11,17 @@ def main():
     probability: float = float(sys.argv[4])
     protocol: str = sys.argv[5]
     window_size: int = int(sys.argv[6])
+
+    # Import given protocol
+    if protocol == "Go-Back-N":
+        from go_back_n import server
+        from go_back_n import client
+    elif protocol == "Selective-Repeat":
+        from selective_repeat import server
+        from selective_repeat import client
+    else:
+        print("Wrong protocol given.(Use: Go-Back-N or Selective-Repeat)")
+        return
 
     # Create and start the server
     server_thread = threading.Thread(target=server, args=(process_id, num_processes, filename, probability, protocol, window_size))
