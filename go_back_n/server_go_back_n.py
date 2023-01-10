@@ -1,8 +1,9 @@
 import random
 import socket
+from struct import pack
 import time
 
-def server (process_id: int, num_processes: int, filename: str, probability: float, window_size: int):
+def server (process_id: int, num_processes: int, filename: str, probability: float, window_size: int, chunk_size: int):
     """Server function to send the file to the clients using the Go-Back-N protocol"""
     # Create and start the server
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -19,12 +20,13 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
 
     # Prepare the packets
     packets: list[bytes] = []
+    # If file is txt use r else rb
     with open(filename, "rb") as file:
         while True:
-            data = file.read(1024)
-            if not data:
+            packet = file.read(chunk_size)
+            if packet == b"":
                 break
-            packets.append(data)
+            packets.append(packet)
 
     start_time = time.time()
 
@@ -58,7 +60,7 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
                     message = f"{seq_num} {packet}".encode("utf-8")
                     server_socket.sendto(message, client)
                     packets_sent[client].append(packet)
-                    print(f"Sent packet {seq_num} to {client}")
+                    print(f"Sent packet {seq_num}/{len(packets)} to {client}")
                 else:
                     print(f"Packet {seq_num} lost")
                 sent_packets += 1
@@ -69,7 +71,7 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
         while len(ready_clients) < int(num_processes):
             data, address = server_socket.recvfrom(1024)
             # Check if the ack is for the current packet
-            if int(data.decode()) == window_end:
+            if int(data.decode()) == window_end + 1:
                 ready_clients.append(address)
             # If ack is not for the current packet, don't move the window and resend the packet
             elif int(data.decode()) <= seq_num - 1:
