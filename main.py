@@ -24,8 +24,8 @@ def main():
         return
 
     # Set chunk_size & buffer_size
-    chunk_size: int = 1024
-    buffer_size: int = 4096
+    chunk_size: int = 3072
+    buffer_size: int = 10240
 
     # Create and start the server
     server_thread = threading.Thread(target=server, args=(process_id, num_processes, filename, probability, window_size, chunk_size, buffer_size))
