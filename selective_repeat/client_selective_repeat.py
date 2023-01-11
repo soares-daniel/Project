@@ -13,7 +13,7 @@ def client(server_process_id: int, client_process_id: int, filename: str, window
     client_socket.sendto(b"hello", server_addr)
 
     # Receive the amount of packets
-    message, address = client_socket.recvfrom(1024)
+    message, address = client_socket.recvfrom(chunk_size)
     num_packets: int = int(message.decode())
 
     # Receive the file using Selective Repeat

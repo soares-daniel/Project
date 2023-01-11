@@ -1,6 +1,6 @@
 import socket
 
-def client(server_process_id: int, client_process_id: int, filename: str, window_size: int, chunk_size: int):
+def client(server_process_id: int, client_process_id: int, filename: str, window_size: int, buffer_size: int):
     """Client function to send a file to the server using the Go-Back-N Protocol"""
     # Create and start the client
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -13,7 +13,7 @@ def client(server_process_id: int, client_process_id: int, filename: str, window
     client_socket.sendto(b"hello", server_addr)
 
     # Receive the amount of packets
-    message, address = client_socket.recvfrom(chunk_size)
+    message, address = client_socket.recvfrom(buffer_size)
     num_packets: int = int(message.decode())
 
     # Receive the file
@@ -26,7 +26,7 @@ def client(server_process_id: int, client_process_id: int, filename: str, window
     while ack_num < num_packets - 1:
         for _ in range(window_size):
             try:
-                message, address = client_socket.recvfrom(chunk_size)
+                message, address = client_socket.recvfrom(buffer_size)
                 if message == b"eof":
                     break
             except socket.timeout:

@@ -2,7 +2,7 @@ import random
 import socket
 import time
 
-def server (process_id: int, num_processes: int, filename: str, probability: float, window_size: int, chunk_size: int):
+def server (process_id: int, num_processes: int, filename: str, probability: float, window_size: int, chunk_size: int, buffer_size: int):
     """Server function to send the file to the clients using the Selective-Repeat protocol"""
     # Create and start the server
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -12,7 +12,7 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
     # Wait for all clients to connect
     ready_clients: list[tuple] = []
     while len(ready_clients) < int(num_processes):
-        data, address = server_socket.recvfrom(chunk_size)
+        data, address = server_socket.recvfrom(buffer_size)
         print(f"received {len(data)} bytes from {address}")
         if data == b"hello":
             ready_clients.append(address)
@@ -68,7 +68,7 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
         # Wait for acks and resend packets if necessary
         ready_clients = []
         while len(ready_clients) < int(num_processes):
-            ack_message, address = server_socket.recvfrom(chunk_size)
+            ack_message, address = server_socket.recvfrom(buffer_size)
             # Check if the ack is for the current packet
             if int(ack_message.decode()) == window_end + 1:
                 ready_clients.append(address)

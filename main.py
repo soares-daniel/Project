@@ -23,17 +23,18 @@ def main():
         print("Wrong protocol given.(Use: Go-Back-N or Selective-Repeat)")
         return
 
-    # Set chunk_size
+    # Set chunk_size & buffer_size
     chunk_size: int = 1024
+    buffer_size: int = 2048
 
     # Create and start the server
-    server_thread = threading.Thread(target=server, args=(process_id, num_processes, filename, probability, window_size, chunk_size))
+    server_thread = threading.Thread(target=server, args=(process_id, num_processes, filename, probability, window_size, chunk_size, buffer_size))
     server_thread.start()
 
     # Create and start the clients
     client_threads = []
     for i in range(num_processes):
-        client_thread = threading.Thread(target=client, args=(process_id, i, filename, window_size, chunk_size))
+        client_thread = threading.Thread(target=client, args=(process_id, i, filename, window_size, buffer_size))
         client_thread.start()
         client_threads.append(client_thread)
 
