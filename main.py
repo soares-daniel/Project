@@ -29,13 +29,6 @@ def main():
     chunk_size: int = 3072
     buffer_size: int = 10240
 
-    # Reset stats file
-    reset = {
-        "processes": []
-    }
-    with open("stats.json", "w", encoding="utf-8") as file:
-        json.dump(reset, file)
-
     # Create and start the server
     server_thread = threading.Thread(target=server, args=(process_id, num_processes, filename, probability, window_size, chunk_size, buffer_size))
     server_thread.start()
@@ -75,9 +68,17 @@ def main():
             client_stats.append(process.get("retransmissions_received"))
             clients.append(client_stats)
     print()
-    print(tabulate([server_stats], headers=["Type", "Process", "Time", "Packets sent", "Bytes sent", "Retransmissions sent"], tablefmt="grid"))
+    print(tabulate([server_stats], headers=["Type", "Process", "Time", "Packets sent", "Bytes sent", "Retransmissions sent"], tablefmt="psql"))
     print()
-    print(tabulate(clients, headers=["Type", "Process", "Packets received", "Bytes received", "Retransmissions received"], tablefmt="grid"))
+    print(tabulate(clients, headers=["Type", "Process", "Packets received", "Bytes received", "Retransmissions received"], tablefmt="psql"))
+
+    # Reset stats file
+    reset = {
+        "processes": []
+    }
+    with open("stats.json", "w", encoding="utf-8") as file:
+        json.dump(reset, file)
+
 
 if __name__ == "__main__":
     main()
