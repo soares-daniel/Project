@@ -58,19 +58,21 @@ def main():
             server_stats.append(process.get("time"))
             server_stats.append(process.get("packets_sent"))
             server_stats.append(process.get("bytes_sent"))
+            server_stats.append(process.get("bytes_received"))
             server_stats.append(process.get("retransmissions_sent"))
         if process.get("type") == "Client":
             client_stats = []
             client_stats.append(process.get("type"))
             client_stats.append(process.get("process"))
             client_stats.append(process.get("packets_received"))
+            client_stats.append(process.get("bytes_sent"))
             client_stats.append(process.get("bytes_received"))
             client_stats.append(process.get("retransmissions_received"))
             clients.append(client_stats)
     print()
-    print(tabulate([server_stats], headers=["Type", "Process", "Time", "Packets sent", "Bytes sent", "Retransmissions sent"], tablefmt="psql"))
+    print(tabulate([server_stats], headers=["Type", "Process", "Time", "Packets sent", "Bytes sent", "Bytes received", "Retransmissions sent"], tablefmt="psql"))
     print()
-    print(tabulate(clients, headers=["Type", "Process", "Packets received", "Bytes received", "Retransmissions received"], tablefmt="psql"))
+    print(tabulate(clients, headers=["Type", "Process", "Packets received","Bytes sent", "Bytes received", "Retransmissions received"], tablefmt="psql"))
 
     # Reset stats file
     reset = {

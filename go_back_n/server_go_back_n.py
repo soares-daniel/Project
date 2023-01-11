@@ -10,10 +10,15 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
     server_addr = ("127.0.0.1", 10000 + int(process_id))
     server_socket.bind(server_addr)
 
+    # Bytes stats
+    bytes_sent: int = 0
+    bytes_received: int = 0
+
     # Wait for all clients to connect
     ready_clients: list[tuple] = []
     while len(ready_clients) < int(num_processes):
         data, address = server_socket.recvfrom(buffer_size)
+        bytes_received += len(data)
         print(f"received {len(data)} bytes from {address}")
         if data == b"hello":
             ready_clients.append(address)
@@ -29,15 +34,13 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
             packets.append(packet)
 
     start_time = time.time()
-
     # Send the amount of packets to the clients
     for client in ready_clients:
-        server_socket.sendto(bytes(str(len(packets)), "utf-8"), client)
+        bytes_sent += server_socket.sendto(bytes(str(len(packets)), "utf-8"), client)
         print(f"Sent amount of packets to {client}")
 
     # Send the file to all clients
     packets_sent = 0
-    bytes_sent = 0
     retransmissions_sent = 0
     sent_packets: dict[tuple, list[bytes]] = {}
     for client in ready_clients:
@@ -60,19 +63,19 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
                 if probability < random.random():
                     # Pack the packet with the seq_num into a message
                     message = f"{seq_num} {packet}".encode("utf-8")
-                    server_socket.sendto(message, client)
+                    bytes_sent += server_socket.sendto(message, client)
                     sent_packets[client].append(packet)
                     print(f"Sent packet {seq_num}/{len(packets)} to {client}")
                 else:
                     print(f"Packet {seq_num} lost")
                 packets_sent += 1
-                bytes_sent += len(packet)
                 seq_num += 1
                 window_start += 1
         # Wait for acks and resend packets if necessary
         ready_clients = []
         while len(ready_clients) < int(num_processes):
             ack_message, address = server_socket.recvfrom(buffer_size)
+            bytes_received += len(ack_message)
             # Check if the ack is for the current packet
             if int(ack_message.decode()) == window_end + 1:
                 ready_clients.append(address)
@@ -87,7 +90,7 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
                     if probability < random.random():
                         # Pack the packet with the seq_num into a message
                         message = f"{seq_num} {packet}".encode("utf-8")
-                        server_socket.sendto(message, address)
+                        bytes_sent += server_socket.sendto(message, address)
                         sent_packets[address].append(packet)
                         print(f"Sent packet {seq_num} to {address}")
                     else:
@@ -106,7 +109,7 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
 
     # Send the client that the last packet is sent
     for client in ready_clients:
-        server_socket.sendto(b"eof", client)
+        bytes_sent += server_socket.sendto(b"eof", client)
         print(f"Sent eof to {client}")
 
     end_time = time.time()
@@ -122,6 +125,7 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
         "time": delta_time,
         "packets_sent": packets_sent,
         "bytes_sent": bytes_sent,
+        "bytes_received": bytes_received,
         "retransmissions_sent": retransmissions_sent,
     }
     with open("stats.json", "r", encoding="utf-8") as file:

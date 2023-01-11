@@ -10,27 +10,30 @@ def client(server_process_id: int, client_process_id: int, filename: str, window
 
     server_addr: tuple = ("127.0.0.1", 10000 + int(server_process_id))
 
+    bytes_sent: int = 0
+    bytes_received: int = 0
     # Send hello to server
-    client_socket.sendto(b"hello", server_addr)
+    bytes_sent += client_socket.sendto(b"hello", server_addr)
 
     # Receive the amount of packets
     message, address = client_socket.recvfrom(buffer_size)
+    bytes_received += len(message)
     num_packets: int = int(message.decode())
 
     # Receive the file
     window_start: int = 0
     window_end: int = window_size - 1
     received_packets: dict[int,bytes] = {}
-    packets_received = 0
-    bytes_received = 0
-    retransmissions_received = 0
-    ack_num = 0
+    packets_received: int = 0
+    retransmissions_received: int = 0
+    ack_num: int = 0
     client_socket.settimeout(0.1)
     # While not all packets received
     while ack_num < num_packets - 1:
         for _ in range(window_size):
             try:
                 message, address = client_socket.recvfrom(buffer_size)
+                bytes_received += len(message)
                 if message == b"eof":
                     break
             except socket.timeout:
@@ -45,11 +48,10 @@ def client(server_process_id: int, client_process_id: int, filename: str, window
                 print(f"Received packet {seq_num} from {address}")
                 ack_num = len(received_packets) - 1
                 packets_received += 1
-                bytes_received += len(data)
                 window_start += 1
         # Send acks
         ack_message = str(len(received_packets)).encode("utf-8")
-        client_socket.sendto(ack_message, server_addr)
+        bytes_sent += client_socket.sendto(ack_message, server_addr)
         print(f"Sent ack {ack_num} to {server_addr}")
         if ack_num == len(received_packets) - 1:
             window_start = window_end + 1
@@ -72,6 +74,7 @@ def client(server_process_id: int, client_process_id: int, filename: str, window
         "type": "Client",
         "process": client_process_id,
         "packets_received": packets_received,
+        "bytes_sent": bytes_sent,
         "bytes_received": bytes_received,
         "retransmissions_received": retransmissions_received,
     }
