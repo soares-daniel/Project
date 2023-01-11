@@ -42,7 +42,9 @@ def client(server_process_id: int, client_process_id: int, filename: str, window
                 ack_num = len(received_packets) - 1
                 window_start += 1
         # Send acks
-        client_socket.sendto(bytes(str(len(received_packets)), "utf-8"), server_addr)
+        message = str(len(received_packets)).encode("utf-8")
+        client_socket.sendto(message, server_addr)
+
         print(f"Sent ack {ack_num} to {server_addr}")
         if ack_num == len(received_packets) - 1:
             window_start = window_end + 1
