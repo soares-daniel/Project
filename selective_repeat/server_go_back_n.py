@@ -3,7 +3,7 @@ import socket
 import time
 
 def server (process_id: int, num_processes: int, filename: str, probability: float, window_size: int, chunk_size: int):
-    """Server function to send the file to the clients using the Go-Back-N protocol"""
+    """Server function to send the file to the clients using the Selective-Repeat protocol"""
     # Create and start the server
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     server_addr = ("127.0.0.1", 10000 + int(process_id))
@@ -35,10 +35,10 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
         print(f"Sent amount of packets to {client}")
 
     # Send the file to all clients
-    sent_packets = 0
-    packets_sent: dict[tuple, list[bytes]] = {}
+    packets_sent = 0
+    sent_packets: dict[tuple, list[bytes]] = {}
     for client in ready_clients:
-        packets_sent[client] = []
+        sent_packets[client] = []
     seq_num: int = 0
     window_start: int = 0
     window_end = window_size - 1
@@ -58,22 +58,22 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
                     # Pack the packet with the seq_num into a message
                     message = f"{seq_num} {packet}".encode("utf-8")
                     server_socket.sendto(message, client)
-                    packets_sent[client].append(packet)
+                    sent_packets[client].append(packet)
                     print(f"Sent packet {seq_num}/{len(packets)} to {client}")
                 else:
                     print(f"Packet {seq_num} lost")
-                sent_packets += 1
+                packets_sent += 1
                 seq_num += 1
                 window_start += 1
         # Wait for acks and resend packets if necessary
         ready_clients = []
         while len(ready_clients) < int(num_processes):
-            data, address = server_socket.recvfrom(1024)
+            ack_message, address = server_socket.recvfrom(1024)
             # Check if the ack is for the current packet
-            if int(data.decode()) == window_end + 1:
+            if int(ack_message.decode()) == window_end + 1:
                 ready_clients.append(address)
             # If ack is not for the current packet, don't move the window and resend the packet
-            elif int(data.decode()) <= seq_num - 1:
+            elif int(ack_message.decode()) <= seq_num - 1:
                 seq_num = datagram_seq_num
                 window_start = datagram_seq_num
                 for _ in range(window_size):
@@ -84,11 +84,11 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
                         # Pack the packet with the seq_num into a message
                         message = f"{seq_num} {packet}".encode("utf-8")
                         server_socket.sendto(message, address)
-                        packets_sent[address].append(packet)
+                        sent_packets[address].append(packet)
                         print(f"Sent packet {seq_num} to {address}")
                     else:
                         print(f"Packet {seq_num} lost")
-                    sent_packets += 1
+                    packets_sent += 1
                     seq_num += 1
                     window_start += 1
         # Move the window
@@ -109,4 +109,4 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
     server_socket.close()
 
     # Print stats
-    print(f"Sent {sent_packets} packets in {end_time - start_time} seconds")
+    print(f"Sent {packets_sent} packets in {end_time - start_time} seconds")

@@ -22,9 +22,9 @@ def client(server_process_id: int, client_process_id: int, filename: str, window
     received_packets: dict[int,bytes] = {}
     ack_num = 0
     client_socket.settimeout(0.1)
-    # while slient is connected to server
+    # While not all packets received
     while ack_num < num_packets - 1:
-        for i in range(window_size):
+        for _ in range(window_size):
             try:
                 message, address = client_socket.recvfrom(chunk_size)
                 if message == b"eof":
