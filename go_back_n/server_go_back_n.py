@@ -57,7 +57,7 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
                 if probability < random.random():
                     # Pack the packet with the seq_num into a message
                     message = f"{seq_num} {packet}".encode("utf-8")
-                    print(server_socket.sendto(message, client))
+                    server_socket.sendto(message, client)
                     sent_packets[client].append(packet)
                     print(f"Sent packet {seq_num}/{len(packets)} to {client}")
                 else:
