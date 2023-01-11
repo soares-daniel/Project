@@ -1,3 +1,4 @@
+import json
 import random
 import socket
 import time
@@ -36,6 +37,8 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
 
     # Send the file to all clients
     packets_sent = 0
+    bytes_sent = 0
+    retransmissions_sent = 0
     sent_packets: dict[tuple, list[bytes]] = {}
     for client in ready_clients:
         sent_packets[client] = []
@@ -63,6 +66,7 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
                 else:
                     print(f"Packet {seq_num} lost")
                 packets_sent += 1
+                bytes_sent += len(packet)
                 seq_num += 1
                 window_start += 1
         # Wait for acks and resend packets if necessary
@@ -89,6 +93,8 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
                     else:
                         print(f"Packet {seq_num} lost")
                     packets_sent += 1
+                    bytes_sent += len(packet)
+                    retransmissions_sent += 1
                     seq_num += 1
                     window_start += 1
         # Move the window
@@ -108,5 +114,18 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
     # Close the socket
     server_socket.close()
 
-    # Print stats
-    print(f"Sent {packets_sent} packets in {end_time - start_time} seconds")
+    # Sent stats to stats json
+    delta_time = end_time - start_time
+    stats = {
+        "type": "Server",
+        "process": process_id,
+        "time": delta_time,
+        "packets_sent": packets_sent,
+        "bytes_sent": bytes_sent,
+        "retransmissions_sent": retransmissions_sent,
+    }
+    with open("stats.json", "r", encoding="utf-8") as file:
+        data = json.load(file)
+    data["processes"].append(stats)
+    with open("stats.json", "w", encoding="utf-8") as file:
+        json.dump(data, file, indent=4)

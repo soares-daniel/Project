@@ -1,3 +1,4 @@
+import json
 import socket
 
 def client(server_process_id: int, client_process_id: int, filename: str, window_size: int, buffer_size: int):
@@ -20,6 +21,9 @@ def client(server_process_id: int, client_process_id: int, filename: str, window
     window_start: int = 0
     window_end: int = window_size - 1
     received_packets: dict[int,bytes] = {}
+    packets_received = 0
+    bytes_received = 0
+    retransmissions_received = 0
     ack_num = 0
     client_socket.settimeout(0.1)
     # While not all packets received
@@ -40,6 +44,8 @@ def client(server_process_id: int, client_process_id: int, filename: str, window
                 received_packets[seq_num] = data
                 print(f"Received packet {seq_num} from {address}")
                 ack_num = len(received_packets) - 1
+                packets_received += 1
+                bytes_received += len(data)
                 window_start += 1
         # Send acks
         ack_message = str(len(received_packets)).encode("utf-8")
@@ -50,6 +56,8 @@ def client(server_process_id: int, client_process_id: int, filename: str, window
             window_end = window_start + window_size - 1
             if window_end > num_packets:
                 window_end = num_packets - 1
+        else:
+            retransmissions_received += 1
 
     # Write the file
     with open(f"received_data/client_{client_process_id}_{filename}", "wb") as file:
@@ -58,3 +66,17 @@ def client(server_process_id: int, client_process_id: int, filename: str, window
 
     # Close the socket
     client_socket.close()
+
+    # Sent stats to stats json
+    stats = {
+        "type": "Client",
+        "process": client_process_id,
+        "packets_received": packets_received,
+        "bytes_received": bytes_received,
+        "retransmissions_received": retransmissions_received,
+    }
+    with open("stats.json", "r", encoding="utf-8") as file:
+        data = json.load(file)
+    data["processes"].append(stats)
+    with open("stats.json", "w", encoding="utf-8") as file:
+        json.dump(data, file, indent=4)

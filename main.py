@@ -1,6 +1,8 @@
 # pylint: disable=C0415
+import json
 import sys
 import threading
+from tabulate import tabulate
 
 def main():
     """Main function to start server and clients"""
@@ -27,6 +29,13 @@ def main():
     chunk_size: int = 3072
     buffer_size: int = 10240
 
+    # Reset stats file
+    reset = {
+        "processes": []
+    }
+    with open("stats.json", "w", encoding="utf-8") as file:
+        json.dump(reset, file)
+
     # Create and start the server
     server_thread = threading.Thread(target=server, args=(process_id, num_processes, filename, probability, window_size, chunk_size, buffer_size))
     server_thread.start()
@@ -37,6 +46,38 @@ def main():
         client_thread = threading.Thread(target=client, args=(process_id, i, filename, window_size, buffer_size))
         client_thread.start()
         client_threads.append(client_thread)
+
+    # Wait for the processes to finish
+    server_thread.join()
+    for client_thread in client_threads:
+        client_thread.join()
+
+    # Print the stats
+    with open("stats.json", "r", encoding="utf-8") as file:
+        stats = json.load(file)
+    processes = stats.get("processes")
+    server_stats = []
+    clients = []
+    for process in processes:
+        if process.get("type") == "Server":
+            server_stats.append(process.get("type"))
+            server_stats.append(process.get("process"))
+            server_stats.append(process.get("time"))
+            server_stats.append(process.get("packets_sent"))
+            server_stats.append(process.get("bytes_sent"))
+            server_stats.append(process.get("retransmissions_sent"))
+        if process.get("type") == "Client":
+            client_stats = []
+            client_stats.append(process.get("type"))
+            client_stats.append(process.get("process"))
+            client_stats.append(process.get("packets_received"))
+            client_stats.append(process.get("bytes_received"))
+            client_stats.append(process.get("retransmissions_received"))
+            clients.append(client_stats)
+    print()
+    print(tabulate([server_stats], headers=["Type", "Process", "Time", "Packets sent", "Bytes sent", "Retransmissions sent"], tablefmt="grid"))
+    print()
+    print(tabulate(clients, headers=["Type", "Process", "Packets received", "Bytes received", "Retransmissions received"], tablefmt="grid"))
 
 if __name__ == "__main__":
     main()
