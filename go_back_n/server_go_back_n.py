@@ -12,7 +12,7 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
     # Wait for all clients to connect
     ready_clients: list[tuple] = []
     while len(ready_clients) < int(num_processes):
-        data, address = server_socket.recvfrom(1024)
+        data, address = server_socket.recvfrom(chunk_size)
         print(f"received {len(data)} bytes from {address}")
         if data == b"hello":
             ready_clients.append(address)
@@ -68,7 +68,7 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
         # Wait for acks and resend packets if necessary
         ready_clients = []
         while len(ready_clients) < int(num_processes):
-            ack_message, address = server_socket.recvfrom(1024)
+            ack_message, address = server_socket.recvfrom(chunk_size)
             # Check if the ack is for the current packet
             if int(ack_message.decode()) == window_end + 1:
                 ready_clients.append(address)
