@@ -5,7 +5,7 @@
       "type": "python",
       "request": "launch",
       "program": "${workspaceFolder}/main.py",
-      "args": ["2", "3", "example.txt", "0.4", "Go-Back-N", "1"]
+      "args": ["2", "3", "50MB.zip", "0.4", "Go-Back-N", "3"]
     }
   ]
 }
