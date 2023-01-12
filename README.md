@@ -56,4 +56,4 @@ python main.py 2 1 50MB.zip 0.2 Go-Back-N 5
 
 Discord: **Sedamaso#5217**
 
-Email: [sedam.code@gmail.com](mailto:sedam.code@gmail.com)
+Email: [sedam.code@gmail.com](mailto:sedam.code@gmail.com
