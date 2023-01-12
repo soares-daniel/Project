@@ -104,7 +104,7 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
                         message = f"{seq_num} {packet}".encode("utf-8")
                         bytes_sent += server_socket.sendto(message, address)
                         sent_packets[address].append(packet)
-                        logger.debug(f"Sent packet {seq_num} to {address}")
+                        logger.debug(f"Retransmitted packet {seq_num} to {address}")
                     else:
                         logger.debug(f"Packet {seq_num} lost")
                     packets_sent += 1
