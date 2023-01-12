@@ -9,7 +9,7 @@ def client(server_process_id: int, client_process_id: int, filename: str, window
     # Set up logging
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
-    file_handler = handlers.RotatingFileHandler(f"logs/client_{client_process_id}.log", maxBytes=1000000, backupCount=5)
+    file_handler = handlers.TimedRotatingFileHandler(f"logs/client_{client_process_id}.log", when="midnight", interval=1, backupCount=7, encoding="utf-8")
     formatter = logging.Formatter('%(asctime)s - %(levelname)-8s - %(name)s - %(funcName)s - %(message)s')
     file_handler.setFormatter(formatter)
     stream_handler = logging.StreamHandler()

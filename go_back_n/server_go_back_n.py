@@ -10,14 +10,14 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
 
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
-    file_handler = handlers.RotatingFileHandler(f"logs/client_{process_id}.log", maxBytes=1000000, backupCount=5)
+    file_handler = handlers.TimedRotatingFileHandler(f"logs/server_{process_id}.log", when="midnight", interval=1, backupCount=7, encoding="utf-8")
     formatter = logging.Formatter('%(asctime)s - %(levelname)-8s - %(name)s - %(funcName)s - %(message)s')
-    file_handler.setFormatter(formatter)
     stream_handler = logging.StreamHandler()
+    file_handler.setFormatter(formatter)
     stream_handler.setFormatter(formatter)
     stream_handler.setLevel(logging.ERROR)
-    logger.addHandler(file_handler)
     logger.addHandler(stream_handler)
+    logger.addHandler(file_handler)
 
     # Create and start the server
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
