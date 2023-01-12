@@ -2,7 +2,9 @@
 
 The goal of this project is to implement a communication among multiple participants.
 
-A given number of clients connect to a server and download a file using the go-back-n protocol.
+A given number of clients connect to a server and download a file using the go-back-n and the selective-repeat protocol.
+
+**NOTE:** Selective-Repeat is currently not working
 
 ## Requirements
 
