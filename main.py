@@ -59,9 +59,10 @@ def main():
     for client_thread in client_threads:
         client_thread.join()
 
+    print()
     print("All processes finished!")
     print("Printing stats...")
-
+    print()
     time.sleep(1)
 
     # Print the stats
@@ -90,10 +91,12 @@ def main():
             client_stats.append(process.get("bytes_received"))
             client_stats.append(process.get("retransmissions_received"))
             clients[process.get("process")].append(client_stats)
-    print()
+    final_clients = []
+    for client in clients.values():
+        final_clients.append(client)
     print(tabulate([server_stats], headers=["Type", "Process", "Time", "Packets sent", "Bytes sent", "Bytes received", "Retransmissions sent"], tablefmt="psql"))
     print()
-    print(tabulate(list(clients.values()), headers=["Type", "Process", "Packets received","Bytes sent", "Bytes received", "Retransmissions received"], tablefmt="psql"))
+    print(tabulate(final_clients, headers=["Type", "Process", "Packets received","Bytes sent", "Bytes received", "Retransmissions received"], tablefmt="psql"))
 
     # Reset stats file
     reset = {
