@@ -42,6 +42,8 @@ def main():
         print("Wrong protocol given.(Use: Go-Back-N or Selective-Repeat)")
         return
 
+    print("Starting server and clients...\n")
+
     # Set chunk_size & buffer_size
     chunk_size: int = 3072
     buffer_size: int = 10240
