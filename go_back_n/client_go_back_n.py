@@ -84,7 +84,7 @@ def client(server_process_id: int, client_process_id: int, filename: str, window
 
                 tabs = "\t" * 2 * (client_process_id)
 
-                print(f"{tabs}Client {client_process_id}: {len(received_packets)}/{num_packets}", end="\r")
+                print(f"{tabs}Client {client_process_id}: {len(received_packets)}", end="\r")
                 packets_received += 1
                 recv_within_window += 1
         # Send acks
