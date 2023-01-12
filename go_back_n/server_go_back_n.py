@@ -155,20 +155,5 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
         "bytes_received": bytes_received,
         "retransmissions_sent": retransmissions_sent,
     }
-    with open("stats.json", "r", encoding="utf-8") as file:
-        data = json.load(file)
-    data["processes"].append(stats)
-    with open("stats.json", "w", encoding="utf-8") as file:
-        json.dump(data, file, indent=4)
-
-def send_packet_with_prob(probability, server_socket, packet, client, seq_num, bytes_sent, sent_packets, logger, packets, packets_sent):
-    if probability < random.random():
-        # Pack the packet with the seq_num into a message
-        message = f"{seq_num} {packet}".encode("utf-8")
-        bytes_sent += server_socket.sendto(message, client)
-        sent_packets[client].append(packet)
-        logger.debug(f"Sent packet {seq_num}/{len(packets)} to {client}")
-    else:
-        logger.debug(f"Packet {seq_num} lost")
-    packets_sent += 1
-    seq_num += 1
+    with open("stats_server.json", "w", encoding="utf-8") as file:
+        json.dump(stats, file, indent=4)

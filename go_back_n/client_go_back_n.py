@@ -84,7 +84,7 @@ def client(server_process_id: int, client_process_id: int, filename: str, window
 
                 tabs = "\t" * 2 * (client_process_id)
 
-                print(f"{tabs}Client {client_process_id} - {len(received_packets)}", end="\r")
+                print(f"{tabs}Client {client_process_id}: {len(received_packets)}/{num_packets}", end="\r")
                 packets_received += 1
                 recv_within_window += 1
         # Send acks
@@ -130,8 +130,5 @@ def client(server_process_id: int, client_process_id: int, filename: str, window
         "bytes_received": bytes_received,
         "retransmissions_received": retransmissions_received,
     }
-    with open("stats.json", "r", encoding="utf-8") as file:
-        data = json.load(file)
-    data["processes"].append(stats)
-    with open("stats.json", "w", encoding="utf-8") as file:
-        json.dump(data, file, indent=4)
+    with open(f"stats_client_{client_process_id}.json", "w", encoding="utf-8") as file:
+        json.dump(stats, file, indent=4)

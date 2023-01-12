@@ -3,26 +3,26 @@ import json
 import sys
 import threading
 import time
+import os
 
 from tabulate import tabulate
 
 def main():
     """Main function to start server and clients"""
     #Parse the args
-    process_id: int = int(sys.argv[1])
-    num_processes: int = int(sys.argv[2])
+    stats_id: int = int(sys.argv[1])
+    num_statses: int = int(sys.argv[2])
     filename: str = sys.argv[3]
     probability: float = float(sys.argv[4])
     protocol: str = sys.argv[5]
     window_size: int = int(sys.argv[6])
 
-    # Reset stats file
-    reset = {
-        "processes": []
-    }
-    with open("stats.json", "w", encoding="utf-8") as file:
-        json.dump(reset, file)
-
+    # Create the logs and stats files
+    with open("stats_server.json", "w", encoding="utf-8") as file:
+        json.dump({}, file, indent=4)
+    for i in range(num_statses):
+        with open(f"stats_client_{i}.json", "w", encoding="utf-8") as file:
+            json.dump({}, file, indent=4)
 
     # Import given protocol
     if protocol == "Go-Back-N":
@@ -39,73 +39,75 @@ def main():
     chunk_size: int = 3072
     buffer_size: int = 10240
 
-    with open(f"logs/server_{process_id}.log", "w", encoding="utf-8") as file:
+    with open(f"logs/server_{stats_id}.log", "w", encoding="utf-8") as file:
         file.write("")
 
     # Create and start the server
-    server_thread = threading.Thread(target=server, args=(process_id, num_processes, filename, probability, window_size, chunk_size, buffer_size))
+    server_thread = threading.Thread(target=server, args=(stats_id, num_statses, filename, probability, window_size, chunk_size, buffer_size))
     server_thread.start()
 
     # Create and start the clients
     client_threads = []
-    for i in range(num_processes):
+    for i in range(num_statses):
         with open(f"logs/client_{i}.log", "w", encoding="utf-8") as file:
             file.write("")
-        client_thread = threading.Thread(target=client, args=(process_id, i, filename, window_size, buffer_size))
+        client_thread = threading.Thread(target=client, args=(stats_id, i, filename, window_size, buffer_size))
         client_thread.start()
         client_threads.append(client_thread)
 
-    # Wait for the processes to finish
+    # Wait for the statses to finish
     server_thread.join()
     for client_thread in client_threads:
         client_thread.join()
 
-    print()
-    print("All processes finished!")
+    print("\n")
+    print("All statses finished!")
     print("Printing stats...")
     print()
-    time.sleep(1)
+    time.sleep(2)
+
+    # Create a list with the stats of the server
+    with open("stats_server.json", "r", encoding="utf-8") as file:
+        stats = json.load(file)
+    server_stats = []
+    server_stats.append(stats.get("type"))
+    server_stats.append(stats.get("process"))
+    server_stats.append(stats.get("time"))
+    server_stats.append(stats.get("packets_sent"))
+    server_stats.append(stats.get("bytes_sent"))
+    server_stats.append(stats.get("bytes_received"))
+    server_stats.append(stats.get("retransmissions_sent"))
+
+    # Create a list of lists with the stats of each client
+    clients: dict[int,list] = {}
+    for i in range(num_statses):
+        clients[i] = []
+        with open(f"stats_client_{i}.json", "r", encoding="utf-8") as file:
+            stats = json.load(file)
+        client_stats = []
+        client_stats.append(stats.get("type"))
+        client_stats.append(stats.get("process"))
+        client_stats.append(stats.get("packets_received"))
+        client_stats.append(stats.get("bytes_sent"))
+        client_stats.append(stats.get("bytes_received"))
+        client_stats.append(stats.get("retransmissions_received"))
+        clients[stats.get("stats")] = client_stats
+
+    table = []
+    for i in range(num_statses):
+        table.append(clients[i])
 
     # Print the stats
-    with open("stats.json", "r", encoding="utf-8") as file:
-        stats = json.load(file)
-    processes = stats.get("processes")
-    server_stats = []
-    clients = {}
-    for i in range(num_processes):
-        clients[i] = []
-    for process in processes:
-        if process.get("type") == "Server":
-            server_stats.append(process.get("type"))
-            server_stats.append(process.get("process"))
-            server_stats.append(process.get("time"))
-            server_stats.append(process.get("packets_sent"))
-            server_stats.append(process.get("bytes_sent"))
-            server_stats.append(process.get("bytes_received"))
-            server_stats.append(process.get("retransmissions_sent"))
-        if process.get("type") == "Client":
-            client_stats = []
-            client_stats.append(process.get("type"))
-            client_stats.append(process.get("process"))
-            client_stats.append(process.get("packets_received"))
-            client_stats.append(process.get("bytes_sent"))
-            client_stats.append(process.get("bytes_received"))
-            client_stats.append(process.get("retransmissions_received"))
-            clients[process.get("process")].append(client_stats)
-    final_clients = []
-    for client in clients.values():
-        final_clients.append(client)
-    print(tabulate([server_stats], headers=["Type", "Process", "Time", "Packets sent", "Bytes sent", "Bytes received", "Retransmissions sent"], tablefmt="psql"))
+    print(tabulate([server_stats], headers=["Type", "Process", "Time", "Packets sent", "Bytes sent", "Bytes received", "Retransmissions sent"],
+                   tablefmt="psql"))
     print()
-    print(tabulate(final_clients, headers=["Type", "Process", "Packets received","Bytes sent", "Bytes received", "Retransmissions received"], tablefmt="psql"))
+    print(tabulate(table, headers=["Type", "Process", "Packets received","Bytes sent", "Bytes received", "Retransmissions received"],
+                   tablefmt="psql"))
 
-    # Reset stats file
-    reset = {
-        "processes": []
-    }
-    with open("stats.json", "w", encoding="utf-8") as file:
-        json.dump(reset, file)
-
+    # Remove the stats files
+    os.remove("stats_server.json")
+    for i in range(num_statses):
+        os.remove(f"stats_client_{i}.json")
 
 if __name__ == "__main__":
     main()
