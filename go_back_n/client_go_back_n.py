@@ -7,10 +7,10 @@ def client(server_process_id: int, client_process_id: int, filename: str, window
     """Client function to send a file to the server using the Go-Back-N Protocol"""
 
     # Set up logging
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger(f"Client_{client_process_id}")
     logger.setLevel(logging.DEBUG)
     file_handler = handlers.TimedRotatingFileHandler(f"logs/client_{client_process_id}.log", when="midnight", interval=1, backupCount=7, encoding="utf-8")
-    formatter = logging.Formatter('%(asctime)s - %(levelname)-8s - %(name)s - %(funcName)s - %(message)s')
+    formatter = logging.Formatter('%(asctime)s - %(levelname)-8s - %(name)s - %(message)s')
     file_handler.setFormatter(formatter)
     stream_handler = logging.StreamHandler()
     stream_handler.setFormatter(formatter)

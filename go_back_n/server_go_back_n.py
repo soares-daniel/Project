@@ -8,10 +8,10 @@ from logging import handlers
 def server (process_id: int, num_processes: int, filename: str, probability: float, window_size: int, chunk_size: int, buffer_size: int):
     """Server function to send the file to the clients using the Selective-Repeat protocol"""
 
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger(f"Server_{process_id}")
     logger.setLevel(logging.DEBUG)
     file_handler = handlers.TimedRotatingFileHandler(f"logs/server_{process_id}.log", when="midnight", interval=1, backupCount=7, encoding="utf-8")
-    formatter = logging.Formatter('%(asctime)s - %(levelname)-8s - %(name)s - %(funcName)s - %(message)s')
+    formatter = logging.Formatter('%(asctime)s - %(levelname)-8s - %(name)s - %(message)s')
     stream_handler = logging.StreamHandler()
     file_handler.setFormatter(formatter)
     stream_handler.setFormatter(formatter)
@@ -33,7 +33,7 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
     while len(ready_clients) < int(num_processes):
         data, address = server_socket.recvfrom(buffer_size)
         bytes_received += len(data)
-        logger.debug(f"received {len(data)} bytes from {address}")
+        logger.debug(f"Received {len(data)} bytes from {address}")
         if data == b"hello":
             ready_clients.append(address)
 
