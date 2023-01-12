@@ -71,8 +71,6 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
             seq_num = datagram_seq_num
             # Send the packet to all clients
             for _ in range(window_size):
-                if window_start > len(packets) - 1:
-                    continue
                 packet = packets[seq_num]
                 if probability < random.random():
                     # Pack the packet with the seq_num into a message
@@ -90,11 +88,11 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
         while len(ready_clients) < int(num_processes):
             ack_message, address = server_socket.recvfrom(buffer_size)
             bytes_received += len(ack_message)
-            # Check if the ack is for the current packet
-            if int(ack_message.decode()) == window_end + 1:
+            # Check if client has received window_size num of packets
+            if int(ack_message.decode()) == window_size:
                 ready_clients.append(address)
             # If ack is not for the current packet, don't move the window and resend the packet
-            elif int(ack_message.decode()) <= seq_num - 1:
+            elif int(ack_message.decode()) < window_size:
                 seq_num = datagram_seq_num
                 window_start = datagram_seq_num
                 for _ in range(window_size):
@@ -120,6 +118,7 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
         window_end += window_size
         if window_end >= len(packets):
             window_end = len(packets) - 1
+            window_size = window_end - window_start + 1
 
     # Send the client that the last packet is sent
     for client in ready_clients:

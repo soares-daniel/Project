@@ -41,11 +41,13 @@ def client(server_process_id: int, client_process_id: int, filename: str, window
     received_packets: dict[int,bytes] = {}
     packets_received: int = 0
     retransmissions_received: int = 0
+    recv_within_window: int = 0
     ack_num: int = 0
     client_socket.settimeout(0.1)
     # While not all packets received
     while ack_num < num_packets - 1:
         for _ in range(window_size):
+            recv_within_window = 0
             try:
                 message, address = client_socket.recvfrom(buffer_size)
                 bytes_received += len(message)
@@ -64,8 +66,9 @@ def client(server_process_id: int, client_process_id: int, filename: str, window
                 ack_num = len(received_packets) - 1
                 packets_received += 1
                 window_start += 1
+                recv_within_window += 1
         # Send acks
-        ack_message = str(len(received_packets)).encode("utf-8")
+        ack_message = str(recv_within_window).encode("utf-8")
         bytes_sent += client_socket.sendto(ack_message, server_addr)
         logger.debug(f"Sent ack {ack_num} to {server_addr}")
         if ack_num == len(received_packets) - 1:
@@ -73,6 +76,7 @@ def client(server_process_id: int, client_process_id: int, filename: str, window
             window_end = window_start + window_size - 1
             if window_end > num_packets:
                 window_end = num_packets - 1
+                window_size = window_end - window_start + 1
         else:
             retransmissions_received += 1
 
