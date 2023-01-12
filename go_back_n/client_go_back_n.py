@@ -1,8 +1,23 @@
 import json
 import socket
+import logging
+from logging import handlers
 
 def client(server_process_id: int, client_process_id: int, filename: str, window_size: int, buffer_size: int):
     """Client function to send a file to the server using the Go-Back-N Protocol"""
+
+    # Set up logging
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+    file_handler = handlers.RotatingFileHandler(f"logs/client_{client_process_id}.log", maxBytes=1000000, backupCount=5)
+    formatter = logging.Formatter('%(asctime)s - %(levelname)-8s - %(name)s - %(funcName)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+    stream_handler.setLevel(logging.ERROR)
+    logger.addHandler(file_handler)
+    logger.addHandler(stream_handler)
+
     # Create and start the client
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     client_addr: tuple = ("127.0.0.1", 9000 + int(client_process_id))
@@ -45,14 +60,14 @@ def client(server_process_id: int, client_process_id: int, filename: str, window
                 seq_num = int(seq_num)
                 data = bytes(data, "utf-8")
                 received_packets[seq_num] = data
-                print(f"Received packet {seq_num} from {address}")
+                logger.debug(f"Received packet {seq_num} from {address}")
                 ack_num = len(received_packets) - 1
                 packets_received += 1
                 window_start += 1
         # Send acks
         ack_message = str(len(received_packets)).encode("utf-8")
         bytes_sent += client_socket.sendto(ack_message, server_addr)
-        print(f"Sent ack {ack_num} to {server_addr}")
+        logger.debug(f"Sent ack {ack_num} to {server_addr}")
         if ack_num == len(received_packets) - 1:
             window_start = window_end + 1
             window_end = window_start + window_size - 1

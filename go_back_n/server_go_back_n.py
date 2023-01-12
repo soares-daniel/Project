@@ -2,9 +2,23 @@ import json
 import random
 import socket
 import time
+import logging
+from logging import handlers
 
 def server (process_id: int, num_processes: int, filename: str, probability: float, window_size: int, chunk_size: int, buffer_size: int):
     """Server function to send the file to the clients using the Selective-Repeat protocol"""
+
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+    file_handler = handlers.RotatingFileHandler(f"logs/client_{process_id}.log", maxBytes=1000000, backupCount=5)
+    formatter = logging.Formatter('%(asctime)s - %(levelname)-8s - %(name)s - %(funcName)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+    stream_handler.setLevel(logging.ERROR)
+    logger.addHandler(file_handler)
+    logger.addHandler(stream_handler)
+
     # Create and start the server
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     server_addr = ("127.0.0.1", 10000 + int(process_id))
@@ -19,7 +33,7 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
     while len(ready_clients) < int(num_processes):
         data, address = server_socket.recvfrom(buffer_size)
         bytes_received += len(data)
-        print(f"received {len(data)} bytes from {address}")
+        logger.debug(f"received {len(data)} bytes from {address}")
         if data == b"hello":
             ready_clients.append(address)
 
@@ -37,7 +51,7 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
     # Send the amount of packets to the clients
     for client in ready_clients:
         bytes_sent += server_socket.sendto(bytes(str(len(packets)), "utf-8"), client)
-        print(f"Sent amount of packets to {client}")
+        logger.debug(f"Sent amount of packets to {client}")
 
     # Send the file to all clients
     packets_sent = 0
@@ -65,9 +79,9 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
                     message = f"{seq_num} {packet}".encode("utf-8")
                     bytes_sent += server_socket.sendto(message, client)
                     sent_packets[client].append(packet)
-                    print(f"Sent packet {seq_num}/{len(packets)} to {client}")
+                    logger.debug(f"Sent packet {seq_num}/{len(packets)} to {client}")
                 else:
-                    print(f"Packet {seq_num} lost")
+                    logger.debug(f"Packet {seq_num} lost")
                 packets_sent += 1
                 seq_num += 1
                 window_start += 1
@@ -92,9 +106,9 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
                         message = f"{seq_num} {packet}".encode("utf-8")
                         bytes_sent += server_socket.sendto(message, address)
                         sent_packets[address].append(packet)
-                        print(f"Sent packet {seq_num} to {address}")
+                        logger.debug(f"Sent packet {seq_num} to {address}")
                     else:
-                        print(f"Packet {seq_num} lost")
+                        logger.debug(f"Packet {seq_num} lost")
                     packets_sent += 1
                     bytes_sent += len(packet)
                     retransmissions_sent += 1
@@ -110,7 +124,7 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
     # Send the client that the last packet is sent
     for client in ready_clients:
         bytes_sent += server_socket.sendto(b"eof", client)
-        print(f"Sent eof to {client}")
+        logger.debug(f"Sent eof to {client}")
 
     end_time = time.time()
 

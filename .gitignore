@@ -10,3 +10,4 @@ received_data/*
 50MB.zip
 selective_repeat/client_selective_repeat.py
 selective_repeat/server_selective_repeat.py
+*.log
