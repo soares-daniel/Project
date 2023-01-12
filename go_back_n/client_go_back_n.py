@@ -44,19 +44,19 @@ def client(server_process_id: int, client_process_id: int, filename: str, window
     retransmissions_received: int = 0
     recv_within_window: int = 0
     ack_num: int = 0
-    client_socket.settimeout(0.1)
     # While not all packets received
     while ack_num < num_packets - 1:
         recv_within_window = 0
         for _ in range(window_size):
-            try:
+            client_socket.settimeout(0.1)
+            try: # Receive packet
                 message, address = client_socket.recvfrom(buffer_size)
                 bytes_received += len(message)
-                if message == b"eof":
-                    break
             except socket.timeout:
-                # Send ack if no new message
+                logger.debug(f"Timed out waiting for packet from {server_addr}")
                 continue
+            if message == b"eof":
+                break
             if address == server_addr:
                 # Packet received
                 seq_num, data = message.decode().split(" ", 1)
@@ -65,7 +65,10 @@ def client(server_process_id: int, client_process_id: int, filename: str, window
                 received_packets[seq_num] = data
                 logger.debug(f"Received packet {seq_num} from {address}")
                 ack_num = len(received_packets) - 1
-                print(f"Client {client_process_id} - {len(received_packets)}", end="\r")
+
+                tabs = "\t" * 2 * (client_process_id)
+
+                print(f"{tabs}Client {client_process_id} - {len(received_packets)}", end="\r")
                 packets_received += 1
                 recv_within_window += 1
         # Send acks
@@ -73,7 +76,17 @@ def client(server_process_id: int, client_process_id: int, filename: str, window
         bytes_sent += client_socket.sendto(ack_message, server_addr)
         logger.debug(f"Sent ack {recv_within_window} to {server_addr}")
         if recv_within_window == window_size:
-            # Move window
+            # Block while other client are not ready for next datagram
+            ready_next = False
+            client_socket.setblocking(True)
+            while not ready_next:
+                message, address = client_socket.recvfrom(buffer_size)
+                bytes_received += len(message)
+                if message == b"ready":
+                    logger.debug(f"Ready for next datagram")
+                    client_socket.setblocking(False)
+                    ready_next = True
+             # Move window
             window_start += window_size
             window_end += window_size
             if window_end > num_packets - 1:

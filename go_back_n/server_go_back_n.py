@@ -1,6 +1,7 @@
 import json
 import random
 import socket
+import threading
 import time
 import logging
 from logging import handlers
@@ -69,8 +70,8 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
             # Set first seq_num for this datagram
             seq_num = datagram_seq_num
             # Send the packet to all clients
+            packet = packets[seq_num]
             for _ in range(window_size):
-                packet = packets[seq_num]
                 if probability < random.random():
                     # Pack the packet with the seq_num into a message
                     message = f"{seq_num} {packet}".encode("utf-8")
@@ -106,6 +107,10 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
                     bytes_sent += len(packet)
                     seq_num += 1
                 retransmissions_sent += 1
+        # Sent ready for next datagram
+        for client in ready_clients:
+            bytes_sent += server_socket.sendto(b"ready", client)
+            logger.debug(f"Sent ready to {client}")
         # Move the window
         window_start += window_size
         datagram_seq_num = window_start
@@ -142,3 +147,15 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
     data["processes"].append(stats)
     with open("stats.json", "w", encoding="utf-8") as file:
         json.dump(data, file, indent=4)
+
+def send_packet_with_prob(probability, server_socket, packet, client, seq_num, bytes_sent, sent_packets, logger, packets, packets_sent):
+    if probability < random.random():
+        # Pack the packet with the seq_num into a message
+        message = f"{seq_num} {packet}".encode("utf-8")
+        bytes_sent += server_socket.sendto(message, client)
+        sent_packets[client].append(packet)
+        logger.debug(f"Sent packet {seq_num}/{len(packets)} to {client}")
+    else:
+        logger.debug(f"Packet {seq_num} lost")
+    packets_sent += 1
+    seq_num += 1

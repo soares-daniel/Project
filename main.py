@@ -15,6 +15,14 @@ def main():
     protocol: str = sys.argv[5]
     window_size: int = int(sys.argv[6])
 
+    # Reset stats file
+    reset = {
+        "processes": []
+    }
+    with open("stats.json", "w", encoding="utf-8") as file:
+        json.dump(reset, file)
+
+
     # Import given protocol
     if protocol == "Go-Back-N":
         from go_back_n import server
@@ -85,7 +93,7 @@ def main():
     print()
     print(tabulate([server_stats], headers=["Type", "Process", "Time", "Packets sent", "Bytes sent", "Bytes received", "Retransmissions sent"], tablefmt="psql"))
     print()
-    print(tabulate(clients, headers=["Type", "Process", "Packets received","Bytes sent", "Bytes received", "Retransmissions received"], tablefmt="psql"))
+    print(tabulate(list(clients.values()), headers=["Type", "Process", "Packets received","Bytes sent", "Bytes received", "Retransmissions received"], tablefmt="psql"))
 
     # Reset stats file
     reset = {
