@@ -47,8 +47,8 @@ def client(server_process_id: int, client_process_id: int, filename: str, window
     client_socket.settimeout(0.1)
     # While not all packets received
     while ack_num < num_packets - 1:
+        recv_within_window = 0
         for _ in range(window_size):
-            recv_within_window = 0
             try:
                 message, address = client_socket.recvfrom(buffer_size)
                 bytes_received += len(message)
@@ -65,6 +65,7 @@ def client(server_process_id: int, client_process_id: int, filename: str, window
                 received_packets[seq_num] = data
                 logger.debug(f"Received packet {seq_num} from {address}")
                 ack_num = len(received_packets) - 1
+                print(f"Client {client_process_id} - {len(received_packets)}", end="\r")
                 packets_received += 1
                 recv_within_window += 1
         # Send acks
