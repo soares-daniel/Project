@@ -17,12 +17,20 @@ def main():
     protocol: str = sys.argv[5]
     window_size: int = int(sys.argv[6])
 
-    # Create the logs and stats files
+    # Create necessary folders
+    os.path.exists("logs") or os.mkdir("logs")
+    os.path.exists("received_data") or os.mkdir("received_data")
+
+    # Create/reset the logs and stats files
     with open("stats_server.json", "w", encoding="utf-8") as file:
         json.dump({}, file, indent=4)
+    with open(f"logs/server_{stats_id}.log", "w", encoding="utf-8") as file:
+        file.write("")
     for i in range(num_statses):
         with open(f"stats_client_{i}.json", "w", encoding="utf-8") as file:
             json.dump({}, file, indent=4)
+        with open(f"logs/client_{i}.log", "w", encoding="utf-8") as file:
+            file.write("")
 
     # Import given protocol
     if protocol == "Go-Back-N":
@@ -39,9 +47,6 @@ def main():
     chunk_size: int = 3072
     buffer_size: int = 10240
 
-    with open(f"logs/server_{stats_id}.log", "w", encoding="utf-8") as file:
-        file.write("")
-
     # Create and start the server
     server_thread = threading.Thread(target=server, args=(stats_id, num_statses, filename, probability, window_size, chunk_size, buffer_size))
     server_thread.start()
@@ -49,8 +54,6 @@ def main():
     # Create and start the clients
     client_threads = []
     for i in range(num_statses):
-        with open(f"logs/client_{i}.log", "w", encoding="utf-8") as file:
-            file.write("")
         client_thread = threading.Thread(target=client, args=(stats_id, i, filename, window_size, buffer_size))
         client_thread.start()
         client_threads.append(client_thread)
