@@ -95,8 +95,6 @@ def main():
         client_stats.append(stats.get("retransmissions_received"))
         clients[stats.get("process")] = client_stats
 
-    print(clients)
-
     table = []
     for i in range(num_statses):
         table.append(clients[i])
