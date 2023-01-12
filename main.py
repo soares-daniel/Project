@@ -93,7 +93,7 @@ def main():
         client_stats.append(stats.get("bytes_sent"))
         client_stats.append(stats.get("bytes_received"))
         client_stats.append(stats.get("retransmissions_received"))
-        clients[stats.get("stats")] = client_stats
+        clients[stats.get("process")] = client_stats
 
     print(clients)
 
@@ -110,10 +110,10 @@ def main():
 
     time.sleep(1)
 
-    # # Remove the stats files
-    # os.remove("stats_server.json")
-    # for i in range(num_statses):
-    #     os.remove(f"stats_client_{i}.json")
+    # Remove the stats files
+    os.remove("stats_server.json")
+    for i in range(num_statses):
+        os.remove(f"stats_client_{i}.json")
 
 if __name__ == "__main__":
     main()

@@ -132,5 +132,3 @@ def client(server_process_id: int, client_process_id: int, filename: str, window
     }
     with open(f"stats_client_{client_process_id}.json", "w", encoding="utf-8") as file:
         json.dump(stats, file, indent=4)
-
-    print(f"Client {client_process_id} finished")
