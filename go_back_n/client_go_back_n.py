@@ -1,8 +1,11 @@
 import json
-import socket
 import logging
-from logging import handlers
+import socket
 import time
+from logging import handlers
+
+import crcmod
+
 
 def client(server_process_id: int, client_process_id: int, filename: str, window_size: int, buffer_size: int):
     """Client function to send a file to the server using the Go-Back-N Protocol"""
@@ -10,7 +13,8 @@ def client(server_process_id: int, client_process_id: int, filename: str, window
     # Set up logging
     logger = logging.getLogger(f"Client_{client_process_id}")
     logger.setLevel(logging.DEBUG)
-    file_handler = handlers.TimedRotatingFileHandler(f"logs/client_{client_process_id}.log", when="midnight", interval=1, backupCount=7, encoding="utf-8")
+    file_handler = handlers.TimedRotatingFileHandler(f"logs/client_{client_process_id}.log",
+                                                     when="midnight", interval=1, backupCount=7, encoding="utf-8")
     formatter = logging.Formatter('%(asctime)s - %(levelname)-8s - %(name)s - %(message)s')
     file_handler.setFormatter(formatter)
     stream_handler = logging.StreamHandler()
@@ -36,6 +40,9 @@ def client(server_process_id: int, client_process_id: int, filename: str, window
     bytes_received += len(message)
     num_packets: int = int(message.decode())
 
+    # Create a new CRC function
+    crc_func = crcmod.mkCrcFun(0x11021, rev=True, initCrc=0x0000, xorOut=0x0000)
+
     # Receive the file
     window_start: int = 0
     window_end: int = window_size - 1
@@ -50,11 +57,20 @@ def client(server_process_id: int, client_process_id: int, filename: str, window
         for _ in range(window_size):
             client_socket.settimeout(0.1)
             try: # Receive packet
-                message, address = client_socket.recvfrom(buffer_size)
-                bytes_received += len(message)
+                packet, address = client_socket.recvfrom(buffer_size)
+                bytes_received += len(packet)
             except socket.timeout:
                 logger.debug(f"Timed out waiting for packet from {server_addr}")
                 continue
+            # Extract CRC
+            received_crc = int.from_bytes(packet[-2:], byteorder="big")
+            # Calculate the packet CRC
+            calc_crc = crc_func(packet[:-2])
+            # Compare CRCs
+            if calc_crc != received_crc:
+                logger.info("Received packet is corruped! Not adding to received packets")
+                continue
+            message = packet[:-2]
             if message == b"eof":
                 break
             if address == server_addr:

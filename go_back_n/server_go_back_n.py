@@ -1,10 +1,12 @@
 import json
+import logging
 import random
 import socket
-import threading
 import time
-import logging
 from logging import handlers
+
+import crcmod
+
 
 def server (process_id: int, num_processes: int, filename: str, probability: float, window_size: int, chunk_size: int, buffer_size: int):
     """Server function to send the file to the clients using the Selective-Repeat protocol"""
@@ -54,6 +56,9 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
         bytes_sent += server_socket.sendto(bytes(str(len(packets)), "utf-8"), client)
         logger.debug(f"Sent amount of packets to {client}")
 
+    # Create a new CRC function
+    crc_func = crcmod.mkCrcFun(0x11021, rev=True, initCrc=0x0000, xorOut=0x0000)
+
     # Send the file to all clients
     packets_sent = 0
     retransmissions_sent = 0
@@ -75,6 +80,10 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
                 if probability < random.random():
                     # Pack the packet with the seq_num into a message
                     message = f"{seq_num} {packet}".encode("utf-8")
+                    # Calculate CRC
+                    crc = crc_func(message)
+                    # Attach CRC to the message
+                    message = message + crc.to_bytes(2, byteorder="big")
                     bytes_sent += server_socket.sendto(message, client)
                     sent_packets[client].append(packet)
                     logger.debug(f"Sent packet {seq_num}/{len(packets)} to {client}")
@@ -98,6 +107,10 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
                     if probability < random.random():
                         # Pack the packet with the seq_num into a message
                         message = f"{seq_num} {packet}".encode("utf-8")
+                        # Calculate CRC
+                        crc = crc_func(message)
+                        # Attach CRC to the message
+                        message = message + crc.to_bytes(2, byteorder="big")
                         bytes_sent += server_socket.sendto(message, address)
                         sent_packets[address].append(packet)
                         logger.debug(f"Retransmitted packet {seq_num} to {address}")

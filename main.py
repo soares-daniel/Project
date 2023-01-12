@@ -3,6 +3,7 @@ import json
 import sys
 import threading
 import time
+
 from tabulate import tabulate
 
 def main():

@@ -1,10 +1,20 @@
 {
-  // on save format the code
-  "editor.formatOnSave": true,
-  // on save remove trailing spaces
+  "python.defaultInterpreterPath": "/Users/sedam/Documents/Code/ehrenbot_2.0/.venv/bin/python",
+  "python.terminal.activateEnvironment": true,
+  "python.analysis.typeCheckingMode": "off",
   "files.trimTrailingWhitespace": true,
-  // settings above for max line length is unknown to vscode
-  "cSpell.enabled": false,
-  // change line is too long to 150
-  "python.linting.pylintArgs": ["--disable=C0114,C0103", "--max-line-length=180"],
+  "editor.formatOnSaveMode": "file",
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": true
+  },
+  "python.linting.pylintEnabled": true,
+  "python.linting.enabled": true,
+  "python.linting.pylintArgs": ["--disable=C0114,C0115,C0116,W0237,E1101,W0703", "--max-line-length=165"],
+  "python.formatting.provider": "black",
+  "workbench.colorCustomizations": {
+    "statusBar.background": "#5865F2",
+    "statusBar.foreground": "#FFFFFF"
+  },
+  "cSpell.diagnosticLevel": "Hint",
 }
