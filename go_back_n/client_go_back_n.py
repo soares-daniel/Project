@@ -2,6 +2,7 @@ import json
 import socket
 import logging
 from logging import handlers
+import time
 
 def client(server_process_id: int, client_process_id: int, filename: str, window_size: int, buffer_size: int):
     """Client function to send a file to the server using the Go-Back-N Protocol"""
@@ -65,16 +66,16 @@ def client(server_process_id: int, client_process_id: int, filename: str, window
                 logger.debug(f"Received packet {seq_num} from {address}")
                 ack_num = len(received_packets) - 1
                 packets_received += 1
-                window_start += 1
                 recv_within_window += 1
         # Send acks
         ack_message = str(recv_within_window).encode("utf-8")
         bytes_sent += client_socket.sendto(ack_message, server_addr)
-        logger.debug(f"Sent ack {ack_num} to {server_addr}")
-        if ack_num == len(received_packets) - 1:
-            window_start = window_end + 1
-            window_end = window_start + window_size - 1
-            if window_end > num_packets:
+        logger.debug(f"Sent ack {recv_within_window} to {server_addr}")
+        if recv_within_window == window_size:
+            # Move window
+            window_start += window_size
+            window_end += window_size
+            if window_end > num_packets - 1:
                 window_end = num_packets - 1
                 window_size = window_end - window_start + 1
         else:
@@ -87,6 +88,8 @@ def client(server_process_id: int, client_process_id: int, filename: str, window
 
     # Close the socket
     client_socket.close()
+
+    time.sleep(1)
 
     # Sent stats to stats json
     stats = {

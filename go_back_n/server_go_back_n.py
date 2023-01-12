@@ -67,7 +67,6 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
         # Send the window
         for client in ready_clients:
             # Set first seq_num for this datagram
-            window_start = datagram_seq_num
             seq_num = datagram_seq_num
             # Send the packet to all clients
             for _ in range(window_size):
@@ -82,7 +81,6 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
                     logger.debug(f"Packet {seq_num} lost")
                 packets_sent += 1
                 seq_num += 1
-                window_start += 1
         # Wait for acks and resend packets if necessary
         ready_clients = []
         while len(ready_clients) < int(num_processes):
@@ -94,10 +92,7 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
             # If ack is not for the current packet, don't move the window and resend the packet
             elif int(ack_message.decode()) < window_size:
                 seq_num = datagram_seq_num
-                window_start = datagram_seq_num
                 for _ in range(window_size):
-                    if window_start > len(packets) - 1:
-                        continue
                     packet = packets[seq_num]
                     if probability < random.random():
                         # Pack the packet with the seq_num into a message
@@ -109,11 +104,10 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
                         logger.debug(f"Packet {seq_num} lost")
                     packets_sent += 1
                     bytes_sent += len(packet)
-                    retransmissions_sent += 1
                     seq_num += 1
-                    window_start += 1
+                retransmissions_sent += 1
         # Move the window
-        window_start = window_end + 1
+        window_start += window_size
         datagram_seq_num = window_start
         window_end += window_size
         if window_end >= len(packets):
@@ -129,6 +123,8 @@ def server (process_id: int, num_processes: int, filename: str, probability: flo
 
     # Close the socket
     server_socket.close()
+
+    time.sleep(1)
 
     # Sent stats to stats json
     delta_time = end_time - start_time

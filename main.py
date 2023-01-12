@@ -2,6 +2,7 @@
 import json
 import sys
 import threading
+import time
 from tabulate import tabulate
 
 def main():
@@ -50,12 +51,19 @@ def main():
     for client_thread in client_threads:
         client_thread.join()
 
+    print("All processes finished!")
+    print("Printing stats...")
+
+    time.sleep(1)
+
     # Print the stats
     with open("stats.json", "r", encoding="utf-8") as file:
         stats = json.load(file)
     processes = stats.get("processes")
     server_stats = []
-    clients = []
+    clients = {}
+    for i in range(num_processes):
+        clients[i] = []
     for process in processes:
         if process.get("type") == "Server":
             server_stats.append(process.get("type"))
@@ -73,7 +81,7 @@ def main():
             client_stats.append(process.get("bytes_sent"))
             client_stats.append(process.get("bytes_received"))
             client_stats.append(process.get("retransmissions_received"))
-            clients.append(client_stats)
+            clients[process.get("process")].append(client_stats)
     print()
     print(tabulate([server_stats], headers=["Type", "Process", "Time", "Packets sent", "Bytes sent", "Bytes received", "Retransmissions sent"], tablefmt="psql"))
     print()
