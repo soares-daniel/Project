@@ -29,6 +29,9 @@ def main():
     chunk_size: int = 3072
     buffer_size: int = 10240
 
+    with open(f"logs/server_{process_id}.log", "w", encoding="utf-8") as file:
+        file.write("")
+
     # Create and start the server
     server_thread = threading.Thread(target=server, args=(process_id, num_processes, filename, probability, window_size, chunk_size, buffer_size))
     server_thread.start()
@@ -36,6 +39,8 @@ def main():
     # Create and start the clients
     client_threads = []
     for i in range(num_processes):
+        with open(f"logs/client_{i}.log", "w", encoding="utf-8") as file:
+            file.write("")
         client_thread = threading.Thread(target=client, args=(process_id, i, filename, window_size, buffer_size))
         client_thread.start()
         client_threads.append(client_thread)
